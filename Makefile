@@ -18,12 +18,12 @@ A_FILE := $(LIB_DIR)/$(PROJECT_NAME).a
 EXEC_FILE := $(BIN_DIR)/$(PROJECT_NAME)
 TEST_FILE := $(BIN_DIR)/main_test
 
-CFLAGS := -w -Wall -g -std=c++11 -I$(INC_DIR) -I../deadbrain-avr/include
-LIBS := $(shell pkg-config pkg-config --libs rtmidi) -lusb-1.0
+CFLAGS := -Wall -g -rdynamic -std=c++11 -I$(INC_DIR) $(shell pkg-config pkg-config --cflags rtmidi gtkmm-3.0) -I../deadbrain-avr/include
+LIBS :=  -rdynamic $(shell pkg-config pkg-config --libs rtmidi gtkmm-3.0)
 VERSION := 0.1
 LIB_LDFLAGS := -shared -Wl,-zdefs,-soname,$(PROJECT_NAME).so.$(VERSION)
 
-all: shared test
+all: exec
 
 coverage: CVRG := --coverage
 coverage: all run
@@ -57,7 +57,7 @@ $(A_FILE): $(OBJ_FILES)
 
 $(EXEC_FILE): $(OBJ_FILES)
 	@mkdir -p $(@D)
-	$(CC) $(CVRG) -g $? -o $@ $(LIBS)
+	$(CC) $(CVRG) -g $^ -o $@ $(LIBS)
 
 $(TEST_FILE): $(TEST_OBJ_FILES)
 	@mkdir -p $(@D)

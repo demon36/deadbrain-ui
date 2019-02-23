@@ -1,3 +1,5 @@
+#include "DeadbrainCtrl.h"
+
 #include <iostream>
 #include <vector>
 #include <memory>
@@ -7,10 +9,6 @@
 #include <atomic>
 #include <iomanip>
 
-//#include <jackaudioio.hpp>
-//#include <jackmidiport.hpp>
-
-#include <libdeadbrain/config.h>
 
 using namespace std;
 
@@ -57,7 +55,7 @@ void replyCallback(double timeStamp, std::vector<unsigned char>* reply, void *us
 //		return;
 //	}
 
-	for(int i = 0; i < reply->size(); i++){
+	for(size_t i = 0; i < reply->size(); i++){
 		cout<<std::hex<<std::uppercase<<setfill('0')<<setw(2)<<(short)reply->at(i)<<" ";
 	}
 	cout<<endl;
@@ -118,24 +116,15 @@ bool tryOpenDevice(){
 	return true;
 }
 
-const deadbrain_config& loadConfigFromDevice(){
+void loadConfigFromDevice(){
 	vector<unsigned char> reply = sendRequest(formRequest(vector<unsigned char>{SYSEX_GET_CONFIG}));
-	return config;
 }
 
-//
-//bool isChannelEnabled(int index);
 //void enableChannel(int index);
-//
 //void setScanTime(int channelIndex, int value);
 //void setHitThreshold(int channelIndex, int value);
 //void setNote(int channelIndex, int value);
 //void setRetriggerPeriod(int channelIndex, int value);
-//
-//int getScanTime();
-//int getHitThreshold();
-//int getNote();
-//int getRetriggerPeriod();
 
 void closeDevice(){
 

@@ -1,22 +1,19 @@
+#include <stdint.h>
 #include <sys_ex_defs.h>
 
 namespace DeadbrainCtrl{
 
 bool tryOpenDevice();
-const deadbrain_config& loadConfigFromDevice();
+void loadConfigFromDevice();
 
-bool isChannelEnabled(int index);
-void enableChannel(int index);
-
+const channel_cfg& getChannelConfig(int channelIndex);
+void setChannelEnabled(int index, bool value);
 void setScanTime(int channelIndex, int value);
 void setHitThreshold(int channelIndex, int value);
 void setNote(int channelIndex, int value);
 void setRetriggerPeriod(int channelIndex, int value);
-
-int getScanTime();
-int getHitThreshold();
-int getNote();
-int getRetriggerPeriod();
+void startSignalDebug(int channelIndex);
+void stopSignalDebug();
 
 void closeDevice();
 
