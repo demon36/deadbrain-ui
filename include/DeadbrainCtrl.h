@@ -7,13 +7,14 @@ bool tryOpenDevice();
 void loadConfigFromDevice();
 
 const channel_cfg& getChannelConfig(int channelIndex);
-void setChannelEnabled(int index, bool value);
-void setScanTime(int channelIndex, int value);
-void setHitThreshold(int channelIndex, int value);
-void setNote(int channelIndex, int value);
-void setRetriggerPeriod(int channelIndex, int value);
-void startSignalDebug(int channelIndex);
-void stopSignalDebug();
+bool setChannelEnabled(unsigned char index, unsigned char value);
+bool setScanTime(unsigned char channelIndex, unsigned char value);
+bool setHitThreshold(unsigned char channelIndex, unsigned char value);
+bool setNote(unsigned char channelIndex, unsigned char value);
+bool setRetriggerPeriod(unsigned char channelIndex, unsigned char value);
+bool saveConfigOnDevice();
+bool startSignalDebug(unsigned char channelIndex);
+bool stopSignalDebug();
 
 void closeDevice();
 

@@ -9,6 +9,7 @@ int currentDebugChannel = NUM_CHANNELS;//non-existent channel
 int currentConfigChannel = 0;
 
 Glib::RefPtr<Gtk::Application> GUIApp;
+Gtk::Window* mainWindow = nullptr;
 Gtk::ToggleButton* enabledToggleBtn = nullptr;
 Gtk::SpinButton* scanTimeSpinBtn = nullptr;
 Gtk::SpinButton* thresholdSpinBtn = nullptr;
@@ -20,7 +21,7 @@ int init(){
 	Glib::RefPtr<Gtk::Builder> builder = Gtk::Builder::create_from_file("./res/GUI.glade");
 	gtk_builder_connect_signals(builder->gobj(), NULL);
 
-	Gtk::Window* mainWindow = nullptr;
+
 	Gtk::ComboBoxText* debugChannelComboBox = nullptr;
 	Gtk::ComboBoxText* configChannelComboBox = nullptr;
 
@@ -29,7 +30,7 @@ int init(){
 	builder->get_widget("configChannelComboBox", configChannelComboBox);
 	builder->get_widget("enabledToggleBtn", enabledToggleBtn);
 	builder->get_widget("scanTimeSpinBtn", scanTimeSpinBtn);
-	builder->get_widget("thresholdSpinBtn", configChannelComboBox);
+	builder->get_widget("thresholdSpinBtn", thresholdSpinBtn);
 	builder->get_widget("noteSpinBtn", noteSpinBtn);
 	builder->get_widget("retriggerSpinBtn", retriggerSpinBtn);
 
@@ -52,6 +53,12 @@ void refreshConfigValues(){
 	retriggerSpinBtn->set_value(cfg.retrigger);
 }
 
+void displayErrMessage(std::string value){
+	Gtk::MessageDialog dialog(value.c_str());
+	dialog.set_transient_for(*mainWindow);
+	dialog.run();
+}
+
 extern "C"{//signal handlers set using glade
 
 void onMainWindowShow(){
@@ -59,13 +66,13 @@ void onMainWindowShow(){
 		DeadbrainCtrl::loadConfigFromDevice();
 		refreshConfigValues();
 	}else{
-		Gtk::MessageDialog dialog("Failed to open Deadbrain midi device");
-		dialog.run();
+		displayErrMessage("Failed to open Deadbrain midi device");
 		GUIApp->quit();
 	};
 }
 
 void onAppClose(){
+	//TODO: make sure this function gets called
 	DeadbrainCtrl::closeDevice();
 }
 
@@ -76,11 +83,19 @@ void onDebugChannelChange(GtkComboBox* widget, gpointer user_data){
 	}
 
 	if(currentDebugChannel != NUM_CHANNELS){//debugging was on
-		DeadbrainCtrl::stopSignalDebug();
+		if(!DeadbrainCtrl::stopSignalDebug()){
+			displayErrMessage("Failed to stop debugging");
+			gtk_combo_box_set_active(widget, currentDebugChannel);
+			return;
+		}
 	}
 
 	if(selectedIndex != NUM_CHANNELS){//debug turn on request
-		DeadbrainCtrl::startSignalDebug(selectedIndex);
+		if(!DeadbrainCtrl::startSignalDebug(selectedIndex)){
+			displayErrMessage("Failed to start debugging");
+			gtk_combo_box_set_active(widget, currentDebugChannel);
+			return;
+		}
 	}
 
 	currentDebugChannel = selectedIndex;
@@ -94,27 +109,47 @@ void onConfigChannelChange(GtkComboBox* widget, gpointer user_data){
 
 void onChannelEnabledChange(GtkToggleButton* togglebutton, gpointer user_data){
 	int isActive = gtk_toggle_button_get_active(togglebutton);
-	DeadbrainCtrl::setChannelEnabled(currentConfigChannel, (bool)isActive);
+	if(!DeadbrainCtrl::setChannelEnabled(currentConfigChannel, (bool)isActive)){
+		displayErrMessage("Failed to enable selected channel");
+	}
 }
 
 void onScanTimeChange(GtkSpinButton* spin_button, gpointer user_data){
 	int value = gtk_spin_button_get_value(spin_button);
-	DeadbrainCtrl::setScanTime(currentConfigChannel, value);
+	if(!DeadbrainCtrl::setScanTime(currentConfigChannel, value)){
+		displayErrMessage("Failed to change scan time of selected channel");
+	}
 }
 
 void onThresholdChange(GtkSpinButton* spin_button, gpointer user_data){
 	int value = gtk_spin_button_get_value(spin_button);
-	DeadbrainCtrl::setHitThreshold(currentConfigChannel, value);
+	if(!DeadbrainCtrl::setHitThreshold(currentConfigChannel, value)){
+		displayErrMessage("Failed to change threshol of selected channel");
+	}
 }
 
 void onNoteChange(GtkSpinButton* spin_button, gpointer user_data){
 	int value = gtk_spin_button_get_value(spin_button);
-	DeadbrainCtrl::setNote(currentConfigChannel, value);
+	if(!DeadbrainCtrl::setNote(currentConfigChannel, value)){
+		displayErrMessage("Failed to change midi note of selected channel");
+	}
 }
 
 void onRetriggerChange(GtkSpinButton* spin_button, gpointer user_data){
 	int value = gtk_spin_button_get_value(spin_button);
-	DeadbrainCtrl::setRetriggerPeriod(currentConfigChannel, value);
+	if(!DeadbrainCtrl::setRetriggerPeriod(currentConfigChannel, value)){
+		displayErrMessage("Failed to change re-trigger period of selected channel");
+	}
+}
+
+void onSaveBtnClick(){
+	if(!DeadbrainCtrl::saveConfigOnDevice()){
+		displayErrMessage("Failed to change save configuration on device EEPROM");
+	}
+}
+
+void onExitBtnClick(){
+	GUIApp->quit();
 }
 
 }
@@ -122,5 +157,12 @@ void onRetriggerChange(GtkSpinButton* spin_button, gpointer user_data){
 }
 
 int main(){
+
+	DeadBrainConfig settings = {{0}};
+	settings[0].scan_time = 8;
+	uint8_t* config_ptr = (uint8_t*)settings;
+	uint8_t s = config_ptr[1];
+	uint8_t len = sizeof(DeadBrainConfig);
+
 	GUI::init();
 }
